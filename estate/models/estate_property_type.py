@@ -5,3 +5,11 @@ class PropertyType(models.Model):
     _description = "Real estate property type"
 
     name = fields.Char(required=True)
+
+    _sql_constraints = [
+        (
+            "type_name_unique",
+            "UNIQUE (name)",
+            "Impossible to set this name : another property type with the same name already exists."
+        )
+    ]

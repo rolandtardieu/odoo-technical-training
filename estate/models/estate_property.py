@@ -1,6 +1,7 @@
-from odoo import models, fields, api
+from odoo import models, fields, api, exceptions
 from dateutil.relativedelta import relativedelta
 
+from odoo.tools import float_compare
 
 
 class Property(models.Model):
@@ -38,6 +39,18 @@ class Property(models.Model):
     offer_ids = fields.One2many("estate.property.offer", "property_id", string="Offers")
     best_price = fields.Float(compute="_compute_best_price")
 
+    _sql_constraints = [
+        ("expected_price_spositive", "CHECK (expected_price > 0)", "The expected price has to be strictly positive."),
+        ("selling_price_positive", "CHECK (selling_price >= 0)", "The selling price has to be positive.")
+    ]
+
+    @api.constrains("selling_price")
+    def _check_selling_price(self):
+        for prop in self:
+            if prop.state == "offer_accepted" or prop.state == "sold":
+                if float_compare(prop.selling_price, 0.9 * prop.expected_price) < 0:
+                    raise exceptions.ValidationError("The selling price cannot be less than 90% of the expected price.")
+
     @api.depends("living_area", "garden_area")
     def _compute_total_area(self):
         for prop in self:
@@ -52,5 +65,29 @@ class Property(models.Model):
                     max_price = offer.price
             prop.best_price = max_price
 
+    @api.onchange("garden")
+    def _onchange_garden(self):
+        if self.garden:
+            self.garden_area = 10
+            self.garden_orientation = "north"
+        else:
+            self.garden_area = 0
+            self.garden_orientation = None
+
+    def action_sold(self):
+        for record in self:
+            if record.state != "canceled":
+                record.state = "sold"
+            else:
+                raise exceptions.UserError("Impossible to sell a canceled property.")
+        return True
+
+    def action_cancel(self):
+        for record in self:
+            if record.state != "sold":
+                record.state = "canceled"
+            else:
+                raise exceptions.UserError("Impossible to cancel a sold property.")
+        return True
 
 
