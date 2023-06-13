@@ -6,6 +6,7 @@ from odoo import models, fields, api, exceptions
 class PropertyOffer(models.Model):
     _name = "estate.property.offer"
     _description = "Offer"
+    _order = "price desc"
 
     price = fields.Float()
     status = fields.Selection(

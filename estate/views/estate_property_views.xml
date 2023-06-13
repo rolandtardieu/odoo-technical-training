@@ -31,20 +31,16 @@
                 <header>
                     <button name="action_sold" type="object" string="Sold"/>
                     <button name="action_cancel" type="object" string="Cancel"/>
+                    <field name="state" widget="statusbar" statusbar_visible="new,offer_received,offer_accepted,sold"/>
                 </header>
                 <sheet>
-                    <group>
                         <h1><field name="name"/></h1>
-                        <!-- TODO : Présenter correctement les tags comme demandé dans le tuto -->
-                        <group col="10">
-                            <field name="property_tag_ids"/>
-                        </group>
-                    </group>
+                        <field name="property_tag_ids" widget="many2many_tags" options="{'color_field': 'color'}"/>
 
                     <group col="2">
                         <group>
                             <field name="state" string="Status"/>
-                            <field name="property_type_id"/>
+                            <field name="property_type_id" options="{'no_create': True, 'no_open': True}"/>
                             <field name="postcode"/>
                             <field name="date_availability" string="Available From"/>
 
