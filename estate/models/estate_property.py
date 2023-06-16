@@ -49,7 +49,7 @@ class Property(models.Model):
     def _check_selling_price(self):
         for prop in self:
             if prop.state == "offer_accepted" or prop.state == "sold":
-                if float_compare(prop.selling_price, 0.9 * prop.expected_price) < 0:
+                if float_compare(prop.selling_price, 0.9 * prop.expected_price, precision_rounding=0.01) < 0:
                     raise exceptions.ValidationError("The selling price cannot be less than 90% of the expected price.")
 
     @api.depends("living_area", "garden_area")
@@ -78,7 +78,10 @@ class Property(models.Model):
     def action_sold(self):
         for record in self:
             if record.state != "canceled":
-                record.state = "sold"
+                if record.state == "offer_accepted":
+                    record.state = "sold"
+                else:
+                    raise exceptions.UserError("You have to accept an offer before selling the property.")
             else:
                 raise exceptions.UserError("Impossible to sell a canceled property.")
         return True
@@ -91,4 +94,10 @@ class Property(models.Model):
                 raise exceptions.UserError("Impossible to cancel a sold property.")
         return True
 
-
+    @api.ondelete(at_uninstall=False)
+    def prevent_deletion_if_not_new_or_canceled(self):
+        for property in self:
+            if property.state != "new" and property.state != "canceled":
+                raise exceptions.UserError("Impossible to delete a property which has not status 'new' or 'canceled'.")
+            else:
+                super(Property, property)
